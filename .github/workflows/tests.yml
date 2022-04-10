@@ -1,0 +1,22 @@
+name: Test
+
+on:
+  push:
+
+jobs:
+  tests:
+    name: Test
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Check out base code
+        uses: actions/checkout@v3
+      - name: Setup Node
+        uses: actions/setup-node@v3
+        with:
+          node-version: '14'
+      - name: Install
+        run: npm install
+      - name: Compile contracts
+        run: npx hardhat compile
+      - name: Run hardhat test
+        run: npx hardhat test
