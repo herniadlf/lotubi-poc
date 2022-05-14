@@ -6,6 +6,8 @@ contract LotUbi {
     uint256 public userChoice;
     address public userAddress;
 
+    event NumberChoose(address numberOwner, uint256 number);
+
     constructor() payable {
 
     }
@@ -15,10 +17,12 @@ contract LotUbi {
     }
 
     function chooseNumber(uint256 number) payable external {
-        require(msg.value > 0, 'You must pay something');
+        require(msg.value == 0.001 ether, 'You must pay 0.001 ether');
         userChoice = number;
         userAddress = msg.sender;
         deposit();
+
+        emit NumberChoose(msg.sender, number);
     }
 
     function balance() external view returns (uint256) {

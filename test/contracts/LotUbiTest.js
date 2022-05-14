@@ -1,4 +1,5 @@
 const { expect } = require('chai');
+const { ethers } = require('hardhat');
 
 
 describe('LotUbi', function () {
@@ -32,22 +33,25 @@ describe('LotUbi', function () {
             }
         });
 
-        it('Should selected number with valid amount', async function () {
+        it('Should select a number with valid amount', async function () {
             [owner, someUserAddress] = await ethers.getSigners();
 
-            const options = {value: 1};
-            await lotUbiInstance.connect(someUserAddress).chooseNumber(1, options);
+            const amount = ethers.utils.parseEther("0.001");
+            const transaction = await lotUbiInstance.connect(someUserAddress).chooseNumber(1, {value: amount});
+
+            await expect(transaction)
+                .to.emit(lotUbiInstance, "NumberChoose").withArgs(someUserAddress.address, 1);
             expect(await lotUbiInstance.userChoice()).to.equal(1);
             expect(await lotUbiInstance.userAddress()).to.equal(someUserAddress.address);
-            expect(await lotUbiInstance.balance()).to.equal(ethers.constants.One);
+            expect(await lotUbiInstance.balance()).to.equal(amount);
         });
 
-        it('Should selected number with invvalid amount', async function () {
+        it('Should select a number with invvalid amount', async function () {
             [owner, someUserAddress] = await ethers.getSigners();
 
             await expect(
                 lotUbiInstance.connect(someUserAddress).chooseNumber(1)
-            ).to.be.revertedWith('You must pay something');
+            ).to.be.revertedWith('You must pay 0.001 ether');
 
         });
     });
