@@ -8,10 +8,6 @@ contract LotUbi {
 
     event NumberChoose(address numberOwner, uint256 number);
 
-    constructor() payable {
-
-    }
-
     function deposit() public payable {
 
     }
