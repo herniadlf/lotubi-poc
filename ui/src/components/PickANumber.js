@@ -1,9 +1,9 @@
 import React from "react";
 
-export function DoBetMessage({chooseNumber}) {
+export function PickANumber({pickANumber}) {
   return (
       <div>
-          <h4>Do Bet!</h4>
+          <h4>Pick & Bet!</h4>
           <form
               onSubmit={(event) => {
                   // This function just calls the transferTokens callback with the
@@ -14,12 +14,12 @@ export function DoBetMessage({chooseNumber}) {
                   const numberBet = formData.get("numberBet");
 
                   if (numberBet) {
-                      chooseNumber(numberBet);
+                      pickANumber(numberBet);
                   }
               }}
           >
               <div className="form-group">
-                  <label>What Number do you choose?</label>
+                  <label>What Number do you pick?</label>
                   <input
                       className="form-control"
                       type="number"
@@ -29,7 +29,7 @@ export function DoBetMessage({chooseNumber}) {
                   />
               </div>
               <div className="form-group">
-                  <input className="btn btn-primary" type="submit" value="Bet" />
+                  <input className="btn btn-primary" type="submit" value="Pick & Bet!" />
               </div>
           </form>
       </div>

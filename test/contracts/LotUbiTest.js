@@ -21,12 +21,12 @@ describe('LotUbi', function () {
         });
     });
 
-    describe('Choose number', function () {
+    describe('Pick a number', function () {
         it('Should fail because an invalid number param', async function () {
             [owner, addr1] = await ethers.getSigners();
 
             try{
-                await lotUbiInstance.chooseNumber(-1);
+                await lotUbiInstance.pickANumber(-1);
             } catch (err) {
                 expect(err).to.be.instanceOf(Error)
             }
@@ -35,10 +35,10 @@ describe('LotUbi', function () {
         it('Should select a number with valid amount', async function () {
             [owner, someUserAddress] = await ethers.getSigners();
 
-            const transaction = await lotUbiInstance.connect(someUserAddress).chooseNumber(1, {value: baseAmount});
+            const transaction = await lotUbiInstance.connect(someUserAddress).pickANumber(1, {value: baseAmount});
 
-            expect(transaction)
-              .to.emit(lotUbiInstance, "NumberChoose").withArgs(someUserAddress.address, 1);
+            await expect(transaction)
+              .to.emit(lotUbiInstance, "PickedNumber").withArgs(someUserAddress.address, 1);
             expect(await lotUbiInstance.balance())
               .to.equal(baseAmount);
         });
@@ -47,7 +47,7 @@ describe('LotUbi', function () {
             [owner, someUserAddress] = await ethers.getSigners();
 
             await expect(
-                lotUbiInstance.connect(someUserAddress).chooseNumber(1)
+                lotUbiInstance.connect(someUserAddress).pickANumber(1)
             ).to.be.revertedWith('You must pay 0.001 ether');
 
         });
@@ -56,7 +56,7 @@ describe('LotUbi', function () {
             [owner, someUserAddress] = await ethers.getSigners();
 
             await expect(
-              lotUbiInstance.connect(someUserAddress).chooseNumber(0, {value: baseAmount})
+              lotUbiInstance.connect(someUserAddress).pickANumber(0, {value: baseAmount})
             ).to.be.revertedWith('The number must be between 1 and 10');
         });
 
@@ -64,7 +64,7 @@ describe('LotUbi', function () {
             [owner, someUserAddress] = await ethers.getSigners();
 
             await expect(
-              lotUbiInstance.connect(someUserAddress).chooseNumber(11, {value: baseAmount})
+              lotUbiInstance.connect(someUserAddress).pickANumber(11, {value: baseAmount})
             ).to.be.revertedWith('The number must be between 1 and 10');
         });
     });
@@ -81,7 +81,7 @@ describe('LotUbi', function () {
         it('Should fails because there are no winning number', async function () {
             [owner, participant] = await ethers.getSigners();
 
-            await lotUbiInstance.connect(participant).chooseNumber(winnerNumber, {value: baseAmount});
+            await lotUbiInstance.connect(participant).pickANumber(winnerNumber, {value: baseAmount});
             const closeBetTransaction = lotUbiInstance.connect(owner).closeBets();
 
             await expect(closeBetTransaction).to.be.revertedWith('There is no winning number');
@@ -91,7 +91,7 @@ describe('LotUbi', function () {
             [owner, participant] = await ethers.getSigners();
 
             await lotUbiInstance.setWinnerNumber(winnerNumber);
-            await lotUbiInstance.connect(participant).chooseNumber(winnerNumber, {value: baseAmount});
+            await lotUbiInstance.connect(participant).pickANumber(winnerNumber, {value: baseAmount});
             const treasuryAfterBet = await lotUbiInstance.balance();
             const balanceAfterBet = await ethers.provider.getBalance(participant.address);
 
@@ -99,8 +99,8 @@ describe('LotUbi', function () {
 
             const newParticipantBalance = await ethers.provider.getBalance(participant.address);
 
-            expect(closeBetTransaction)
-              .to.emit(lotUbiInstance, "Winner")
+            await expect(closeBetTransaction)
+              .to.emit(lotUbiInstance, "UserWon")
               .withArgs(participant.address, winnerNumber);
             expect(await lotUbiInstance.balance())
               .to.equal(ethers.constants.Zero);
@@ -112,11 +112,11 @@ describe('LotUbi', function () {
             [owner, participant] = await ethers.getSigners();
 
             await lotUbiInstance.setWinnerNumber(winnerNumber);
-            await lotUbiInstance.connect(participant).chooseNumber(1, {value: baseAmount});
+            await lotUbiInstance.connect(participant).pickANumber(1, {value: baseAmount});
             const closeBetTransaction = await lotUbiInstance.connect(owner).closeBets();
 
-            expect(closeBetTransaction)
-              .to.emit(lotUbiInstance, "NoWinner").withArgs(winnerNumber);
+            await expect(closeBetTransaction)
+              .to.emit(lotUbiInstance, "UserLost").withArgs(winnerNumber);
         });
 
     })

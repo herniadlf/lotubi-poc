@@ -17,7 +17,7 @@ import { Loading } from "./Loading";
 import { KnowResult } from "./KnowResult";
 import { TransactionErrorMessage } from "./TransactionErrorMessage";
 import { WaitingForTransactionMessage } from "./WaitingForTransactionMessage";
-import { DoBetMessage } from "./DoBetMessage";
+import { PickANumber } from "./PickANumber";
 
 // This is the Hardhat Network id, you might change it in the hardhat.config.js.
 // If you are using MetaMask, be sure to change the Network id to 1337.
@@ -139,9 +139,9 @@ export class Dapp extends React.Component {
               callback.
             */}
             {this.state.balance.eq(0) && (
-              <DoBetMessage
-                chooseNumber={(numberBet) =>
-                  this._chooseNumber(numberBet)
+              <PickANumber
+                pickANumber={(numberBet) =>
+                  this._pickANumber(numberBet)
                 }
               />
             )}
@@ -264,7 +264,7 @@ export class Dapp extends React.Component {
   // This method sends an ethereum transaction to transfer tokens.
   // While this action is specific to this application, it illustrates how to
   // send a transaction.
-  async _chooseNumber(numberBet) {
+  async _pickANumber(numberBet) {
     // Sending a transaction is a complex operation:
     //   - The user can reject it
     //   - It can fail before reaching the ethereum network (i.e. if the user
@@ -287,7 +287,7 @@ export class Dapp extends React.Component {
       // We send the transaction, and save its hash in the Dapp's state. This
       // way we can indicate that we are waiting for it to be mined.
       const amount = ethers.utils.parseEther('0.001');
-      const tx = await this._lotUbi.chooseNumber(numberBet, {value: amount});
+      const tx = await this._lotUbi.pickANumber(numberBet, {value: amount});
       this.setState({ txBeingSent: tx.hash });
 
       // We use .wait() to wait for the transaction to be mined. This method

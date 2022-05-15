@@ -3,27 +3,27 @@
 pragma solidity ^0.8.12;
 
 contract LotUbi {
-    uint256 private userChoice;
+    uint256 private userPickedNumber;
     uint256 public winnerNumber;
     address payable private userAddress;
 
-    event NumberChoose(address numberOwner, uint256 number);
-    event Winner(address numberOwner, uint256 number);
-    event NoWinner(uint256 number);
+    event PickedNumber(address numberOwner, uint256 number);
+    event UserWon(address numberOwner, uint256 number);
+    event UserLost(uint256 number);
 
     function deposit() public payable {
 
     }
 
-    function chooseNumber(uint256 number) payable external {
+    function pickANumber(uint256 pickedNumber) payable external {
         require(msg.value == 0.001 ether, 'You must pay 0.001 ether');
-        require(0 < number, 'The number must be between 1 and 10');
-        require(number <= 10, 'The number must be between 1 and 10');
-        userChoice = number;
+        require(0 < pickedNumber, 'The number must be between 1 and 10');
+        require(pickedNumber <= 10, 'The number must be between 1 and 10');
+        userPickedNumber = pickedNumber;
         userAddress = payable(msg.sender);
         deposit();
 
-        emit NumberChoose(msg.sender, number);
+        emit PickedNumber(msg.sender, pickedNumber);
     }
 
     function balance() external view returns (uint256) {
@@ -31,14 +31,14 @@ contract LotUbi {
     }
 
     function closeBets() external {
-        require(userChoice > 0, 'There are no bets yet');
+        require(userPickedNumber > 0, 'There are no bets yet');
         require(winnerNumber > 0, 'There is no winning number');
 
-        if (userChoice == winnerNumber) {
+        if (userPickedNumber == winnerNumber) {
             userAddress.transfer(address(this).balance);
-            emit Winner(userAddress, winnerNumber);
+            emit UserWon(userAddress, winnerNumber);
         } else {
-            emit NoWinner(winnerNumber);
+            emit UserLost(winnerNumber);
         }
     }
 
