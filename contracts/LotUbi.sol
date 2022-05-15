@@ -4,9 +4,12 @@ pragma solidity ^0.8.12;
 
 contract LotUbi {
     uint256 private userChoice;
+    uint256 public winnerNumber;
     address payable private userAddress;
 
     event NumberChoose(address numberOwner, uint256 number);
+    event Winner(address numberOwner, uint256 number);
+    event NoWinner(uint256 number);
 
     function deposit() public payable {
 
@@ -29,13 +32,18 @@ contract LotUbi {
 
     function closeBets() external {
         require(userChoice > 0, 'There are no bets yet');
+        require(winnerNumber > 0, 'There is no winning number');
 
-        userAddress.transfer(address(this).balance);
+        if (userChoice == winnerNumber) {
+            userAddress.transfer(address(this).balance);
+            emit Winner(userAddress, winnerNumber);
+        } else {
+            emit NoWinner(winnerNumber);
+        }
     }
 
-    // This is not safe at all, just to get an abstraction
-    function randomNumber() internal view returns (uint) {
-        uint random = uint(blockhash(block.number - 1));
-        return random % 10;
+    // TODO: This will be retrieved from an oracle.
+    function setWinnerNumber(uint256 number) external {
+        winnerNumber = number;
     }
 }
