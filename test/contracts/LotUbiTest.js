@@ -6,6 +6,7 @@ describe('LotUbi', function () {
 
     let lotUbiContract;
     let lotUbiInstance;
+    const baseAmount = ethers.utils.parseEther("0.001");
 
     beforeEach(async function () {
         lotUbiContract = await ethers.getContractFactory("LotUbi");
@@ -16,8 +17,6 @@ describe('LotUbi', function () {
 
     describe('Deployment', function () {
         it('Should initialize empty', async function () {
-           expect(await lotUbiInstance.userChoice()).to.equal(ethers.constants.Zero);
-           expect(await lotUbiInstance.userAddress()).to.equal(ethers.constants.AddressZero);
            expect(await lotUbiInstance.balance()).to.equal(ethers.constants.Zero);
         });
     });
@@ -36,17 +35,14 @@ describe('LotUbi', function () {
         it('Should select a number with valid amount', async function () {
             [owner, someUserAddress] = await ethers.getSigners();
 
-            const amount = ethers.utils.parseEther("0.001");
-            const transaction = await lotUbiInstance.connect(someUserAddress).chooseNumber(1, {value: amount});
+            const transaction = await lotUbiInstance.connect(someUserAddress).chooseNumber(1, {value: baseAmount});
 
             await expect(transaction)
                 .to.emit(lotUbiInstance, "NumberChoose").withArgs(someUserAddress.address, 1);
-            expect(await lotUbiInstance.userChoice()).to.equal(1);
-            expect(await lotUbiInstance.userAddress()).to.equal(someUserAddress.address);
-            expect(await lotUbiInstance.balance()).to.equal(amount);
+            expect(await lotUbiInstance.balance()).to.equal(baseAmount);
         });
 
-        it('Should select a number with invvalid amount', async function () {
+        it('Should select a number with invalid amount', async function () {
             [owner, someUserAddress] = await ethers.getSigners();
 
             await expect(
@@ -54,6 +50,46 @@ describe('LotUbi', function () {
             ).to.be.revertedWith('You must pay 0.001 ether');
 
         });
+
+        it('Should fail for number less than 0', async function () {
+            [owner, someUserAddress] = await ethers.getSigners();
+
+            await expect(
+              lotUbiInstance.connect(someUserAddress).chooseNumber(0, {value: baseAmount})
+            ).to.be.revertedWith('The number must be between 1 and 10');
+        });
+
+        it('Should fail for number greater than than 10', async function () {
+            [owner, someUserAddress] = await ethers.getSigners();
+
+            await expect(
+              lotUbiInstance.connect(someUserAddress).chooseNumber(11, {value: baseAmount})
+            ).to.be.revertedWith('The number must be between 1 and 10');
+        });
     });
+
+    describe('Close bets', function() {
+        it('Should fails because there are no bets', async function () {
+            await expect(
+              lotUbiInstance.closeBets()
+            ).to.be.revertedWith('There are no bets yet');
+        });
+
+        it('Should be a winner that receives the treasury', async function () {
+            [owner, participant] = await ethers.getSigners();
+
+            await lotUbiInstance.connect(participant).chooseNumber(1, {value: baseAmount});
+            const treasuryAfterBet = await lotUbiInstance.balance();
+            const balanceAfterBet = await ethers.provider.getBalance(participant.address);
+
+            await lotUbiInstance.connect(owner).closeBets();
+
+            const newParticipantBalance = await ethers.provider.getBalance(participant.address);
+
+            expect(await lotUbiInstance.balance()).to.equal(ethers.constants.Zero);
+            expect(newParticipantBalance).to.equal(balanceAfterBet.add(treasuryAfterBet));
+        });
+
+    })
 
 });
