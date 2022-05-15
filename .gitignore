@@ -5,3 +5,6 @@ node_modules
 #Hardhat
 cache
 artifacts
+
+#Frontend files
+ui/src/contracts
