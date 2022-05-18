@@ -169,6 +169,25 @@ describe('LotUbi', function () {
             await expect(closeBetTransaction).to.be.revertedWith('ERR-CLOSEBET-002');
         });
 
+        it('One lucky participant should be the winner', async function () {
+            [owner, firstParticipant] = await ethers.getSigners();
+
+            await lotUbiInstance.connect(firstParticipant).pickANumber(winnerNumber, {value: baseAmount});
+            const firstParticipantBalanceAfterBet = await ethers.provider.getBalance(firstParticipant.address);
+
+            const treasuryAfterBets = await lotUbiInstance.balance();
+            await lotUbiInstance.setWinnerNumber(winnerNumber);
+            const closeBetTransaction = await lotUbiInstance.connect(owner).closeBets();
+
+            const winnerNewBalance = await ethers.provider.getBalance(firstParticipant.address);
+
+            await expect(closeBetTransaction)
+              .to.emit(lotUbiInstance, 'UserWon')
+              .withArgs(firstParticipant.address, winnerNumber, treasuryAfterBets);
+            expect(await lotUbiInstance.balance()).to.equal(ethers.constants.Zero);
+            expect(winnerNewBalance).to.equal(firstParticipantBalanceAfterBet.add(treasuryAfterBets));
+        });
+
         it('Two participants, first should be the winner', async function () {
             [owner, firstParticipant, secondParticipant] = await ethers.getSigners();
 
@@ -196,16 +215,54 @@ describe('LotUbi', function () {
             expect(looserNewBalance).to.equal(secondParticipantBalanceAfterBet);
         });
 
-        it('Should be no winner', async function () {
-            [owner, participant] = await ethers.getSigners();
+        it('Three participants, first two should be the winner and split the reward', async function () {
+            [owner, firstParticipant, secondParticipant, thirdParticipant] = await ethers.getSigners();
 
-            await lotUbiInstance.connect(participant).pickANumber(1, {value: baseAmount});
+            const noWinnerNumber = 2;
+
+            await lotUbiInstance.connect(firstParticipant).pickANumber(winnerNumber, {value: baseAmount});
+            const firstParticipantBalanceAfterBet = await ethers.provider.getBalance(firstParticipant.address);
+            await lotUbiInstance.connect(secondParticipant).pickANumber(winnerNumber, {value: baseAmount});
+            const secondParticipantBalanceAfterBet = await ethers.provider.getBalance(secondParticipant.address);
+            await lotUbiInstance.connect(thirdParticipant).pickANumber(noWinnerNumber, {value: baseAmount});
+            const thirdParticipantBalanceAfterBet = await ethers.provider.getBalance(thirdParticipant.address);
+
+            const treasuryAfterBets = await lotUbiInstance.balance();
+            await lotUbiInstance.setWinnerNumber(winnerNumber);
+            const closeBetTransaction = await lotUbiInstance.connect(owner).closeBets();
+
+            const firstParticipantNewBalance = await ethers.provider.getBalance(firstParticipant.address);
+            const secondParticipantNewBalance = await ethers.provider.getBalance(secondParticipant.address);
+            const thirdParticipantNewBalance = await ethers.provider.getBalance(thirdParticipant.address);
+
+            const treasurySplit = treasuryAfterBets / 2;
+
+            await expect(closeBetTransaction)
+              .to.emit(lotUbiInstance, 'UserWon')
+              .withArgs(firstParticipant.address, winnerNumber, treasurySplit)
+              .and.emit(lotUbiInstance, 'UserWon')
+              .withArgs(secondParticipant.address, winnerNumber, treasurySplit)
+              .and.emit(lotUbiInstance, 'UserLost')
+              .withArgs(thirdParticipant.address, winnerNumber);
+            expect(await lotUbiInstance.balance()).to.equal(ethers.constants.Zero);
+            expect(firstParticipantNewBalance).to.equal(firstParticipantBalanceAfterBet.add(treasurySplit));
+            expect(secondParticipantNewBalance).to.equal(secondParticipantBalanceAfterBet.add(treasurySplit));
+            expect(thirdParticipantNewBalance).to.equal(thirdParticipantBalanceAfterBet);
+        });
+
+        it('Should be no winner', async function () {
+            [owner, firstParticipant, secondParticipant] = await ethers.getSigners();
+
+            await lotUbiInstance.connect(firstParticipant).pickANumber(1, {value: baseAmount});
+            await lotUbiInstance.connect(secondParticipant).pickANumber(8, {value: baseAmount});
             await lotUbiInstance.setWinnerNumber(winnerNumber);
             const closeBetTransaction = await lotUbiInstance.connect(owner).closeBets();
 
             await expect(closeBetTransaction)
               .to.emit(lotUbiInstance, 'UserLost')
-              .withArgs(participant.address, winnerNumber);
+              .withArgs(firstParticipant.address, winnerNumber)
+              .and.emit(lotUbiInstance, 'UserLost')
+              .withArgs(secondParticipant.address, winnerNumber);
         });
 
     })
