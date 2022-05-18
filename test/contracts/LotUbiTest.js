@@ -44,6 +44,52 @@ describe('LotUbi', function () {
               .to.equal(baseAmount);
         });
 
+        it('Should allow two different participants to pick the same number', async function () {
+            [owner, firstParticipant, secondParticipant] = await ethers.getSigners();
+
+            const numberToPick = 5;
+            const firstParticipantTransaction = await lotUbiInstance
+              .connect(firstParticipant)
+              .pickANumber(numberToPick, {value: baseAmount});
+            const secondParticipantTransaction = await lotUbiInstance
+              .connect(secondParticipant)
+              .pickANumber(numberToPick, {value: baseAmount});
+
+            await expect(firstParticipantTransaction)
+              .to.emit(lotUbiInstance, "PickedNumber")
+              .withArgs(firstParticipant.address, numberToPick);
+            await expect(secondParticipantTransaction)
+              .to.emit(lotUbiInstance, "PickedNumber")
+              .withArgs(secondParticipant.address, numberToPick);
+
+            expect(await lotUbiInstance.balance())
+              .to.equal(baseAmount * 2);
+        });
+
+        it('Should allow two different participants to pick the different numbers', async function () {
+            [owner, firstParticipant, secondParticipant] = await ethers.getSigners();
+
+            const firstParticipantNumber = 5;
+            const secondParticipantNumber = 9;
+
+            const firstParticipantTransaction = await lotUbiInstance
+              .connect(firstParticipant)
+              .pickANumber(firstParticipantNumber, {value: baseAmount});
+            const secondParticipantTransaction = await lotUbiInstance
+              .connect(secondParticipant)
+              .pickANumber(secondParticipantNumber, {value: baseAmount});
+
+            await expect(firstParticipantTransaction)
+              .to.emit(lotUbiInstance, "PickedNumber")
+              .withArgs(firstParticipant.address, firstParticipantNumber);
+            await expect(secondParticipantTransaction)
+              .to.emit(lotUbiInstance, "PickedNumber")
+              .withArgs(secondParticipant.address, secondParticipantNumber);
+
+            expect(await lotUbiInstance.balance())
+              .to.equal(baseAmount * 2);
+        });
+
         it('Should fail because the user has already placed a bet', async function () {
             [owner, participant] = await ethers.getSigners();
 
