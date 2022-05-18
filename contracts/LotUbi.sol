@@ -7,10 +7,12 @@ contract LotUbi {
     uint256 public winnerNumber;
     address payable private userAddress;
     mapping (address => uint256) private usersBets;
+    address payable[] private userAddresses;
 
-    event PickedNumber(address numberOwner, uint256 number);
-    event UserWon(address numberOwner, uint256 number);
-    event UserLost(uint256 number);
+    event PickedNumber(address participant, uint256 number);
+    event WinnerNumberSettled(uint256 winnerNumber);
+    event UserWon(address participant, uint256 number, uint256 earnedMoney);
+    event UserLost(address participant, uint256 number);
 
     function deposit() public payable {
 
@@ -26,6 +28,7 @@ contract LotUbi {
         address payable userAddressPayable = payable(msg.sender);
         userAddress = userAddressPayable;
         usersBets[userAddressPayable] = pickedNumber;
+        userAddresses.push(userAddressPayable);
         deposit();
 
         emit PickedNumber(msg.sender, pickedNumber);
@@ -36,14 +39,28 @@ contract LotUbi {
     }
 
     function closeBets() external {
-        require(userPickedNumber > 0, 'There are no bets yet');
-        require(winnerNumber > 0, 'There is no winning number');
+        require(userAddresses.length > 0, '[ERR-CLOSEBET-001] There are no bets yet');
+        require(winnerNumber > 0, '[ERR-CLOSEBET-002] There is no winning number');
 
-        if (userPickedNumber == winnerNumber) {
-            userAddress.transfer(address(this).balance);
-            emit UserWon(userAddress, winnerNumber);
-        } else {
-            emit UserLost(winnerNumber);
+        address payable[] memory winners = new address payable[](userAddresses.length);
+        uint256 winnersSize = 0;
+        for (uint i = 0; i < userAddresses.length; i++) {
+            address payable userAddressPayable = userAddresses[i];
+            if (usersBets[userAddressPayable] == winnerNumber) {
+                winners[winnersSize] = userAddressPayable;
+                winnersSize++;
+            } else {
+                emit UserLost(userAddressPayable, winnerNumber);
+            }
+        }
+
+        if (winnersSize > 0) {
+            uint256 earnByWinner = address(this).balance / winnersSize;
+            for (uint i = 0; i < winnersSize; i++) {
+                address payable userAddressPayable = winners[i];
+                userAddressPayable.transfer(earnByWinner);
+                emit UserWon(userAddressPayable, winnerNumber, earnByWinner);
+            }
         }
     }
 
@@ -51,8 +68,10 @@ contract LotUbi {
         return usersBets[msg.sender] > 0;
     }
 
-    // TODO: This will be retrieved from an oracle.
+    // TODO: This will be retrieved from an oracle and must be retrieved directlye on closeBets.
     function setWinnerNumber(uint256 number) external {
+        require(userAddresses.length > 0, '[ERR-WINNERNUMB-001] There are no bets yet');
         winnerNumber = number;
+        emit WinnerNumberSettled(number);
     }
 }
