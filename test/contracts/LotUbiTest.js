@@ -57,7 +57,7 @@ describe('LotUbi', function () {
 
             await expect(
               lotUbiInstance.connect(someUserAddress).pickANumber(0, {value: baseAmount})
-            ).to.be.revertedWith('The number must be between 1 and 10');
+            ).to.be.revertedWith('The number must be between 1 and 10 ');
         });
 
         it('Should fail for number greater than than 10', async function () {

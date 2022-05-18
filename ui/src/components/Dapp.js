@@ -18,6 +18,7 @@ import { KnowResult } from "./KnowResult";
 import { TransactionErrorMessage } from "./TransactionErrorMessage";
 import { WaitingForTransactionMessage } from "./WaitingForTransactionMessage";
 import { PickANumber } from "./PickANumber";
+import { LotUbiHeader } from "./LotUbiHeader";
 
 // This is the Hardhat Network id, you might change it in the hardhat.config.js.
 // If you are using MetaMask, be sure to change the Network id to 1337.
@@ -31,13 +32,9 @@ const ERROR_CODE_TX_REJECTED_BY_USER = 4001;
 // This component is in charge of doing these things:
 //   1. It connects to the user's wallet
 //   2. Initializes ethers and the LotUbi contract
-//   3. Polls the user balance to keep it updated.
-//   4. Transfers tokens by sending transactions
-//   5. Renders the whole application
+//   3. Polls data from contract to keep it updated.
+//   4. Renders the whole application
 //
-// Note that (3) and (4) are specific of this sample application, but they show
-// you how to keep your Dapp and contract's state in sync,  and how to send a
-// transaction.
 export class Dapp extends React.Component {
   constructor(props) {
     super(props);
@@ -91,21 +88,10 @@ export class Dapp extends React.Component {
     return (
       <div className="container p-4">
         <div className="row">
-          <div className="col-12">
-            <h1>
-              This is the LotUbi :)
-            </h1>
-            <p>
-              Welcome <b>{this.state.selectedAddress}</b>.
-            </p>
-            <p>
-              The actual treasury is <b>{ethers.utils.formatEther(this.state.balance)} ETH</b>
-            </p>
-          </div>
+          <LotUbiHeader/>
         </div>
 
         <hr />
-
         <div className="row">
           <div className="col-12">
             {/*
@@ -129,7 +115,11 @@ export class Dapp extends React.Component {
             )}
           </div>
         </div>
-
+        <div>
+          <p>
+            The actual treasury is <b>{ethers.utils.formatEther(this.state.balance)} ETH</b>
+          </p>
+        </div>
         <div className="row">
           <div className="col-12">
             {/*
@@ -336,6 +326,9 @@ export class Dapp extends React.Component {
   // message.
   _getRpcErrorMessage(error) {
     if (error.data) {
+      if (error.data.message.includes('ERR-PICK-02')) {
+        return 'The number must be between 1 and 10'
+      }
       return error.data.message;
     }
 

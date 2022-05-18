@@ -16,9 +16,9 @@ contract LotUbi {
     }
 
     function pickANumber(uint256 pickedNumber) payable external {
-        require(msg.value == 0.001 ether, 'You must pay 0.001 ether');
-        require(0 < pickedNumber, 'The number must be between 1 and 10');
-        require(pickedNumber <= 10, 'The number must be between 1 and 10');
+        require(msg.value == 0.001 ether, '[ERR-PICK-01] You must pay 0.001 ether');
+        require(0 < pickedNumber, '[ERR-PICK-02] The number must be between 1 and 10');
+        require(pickedNumber <= 10, '[ERR-PICK-02] The number must be between 1 and 10');
         userPickedNumber = pickedNumber;
         userAddress = payable(msg.sender);
         deposit();

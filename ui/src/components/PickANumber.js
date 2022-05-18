@@ -3,7 +3,6 @@ import React from "react";
 export function PickANumber({pickANumber}) {
   return (
       <div>
-          <h4>Pick & Bet!</h4>
           <form
               onSubmit={(event) => {
                   // This function just calls the transferTokens callback with the
@@ -20,17 +19,19 @@ export function PickANumber({pickANumber}) {
           >
               <div className="form-group">
                   <label>What Number do you pick?</label>
-                  <input
-                      className="form-control"
+                  <div className="form-inline">
+                    <input
+                      className="form-control col-3 mb-2"
                       type="number"
+                      min="0"
                       step="1"
                       name="numberBet"
                       required
-                  />
+                    />
+                    <input className="btn btn-primary mb-2 mx-sm-3" type="submit" value="Pick & Bet!" />
+                  </div>
               </div>
-              <div className="form-group">
-                  <input className="btn btn-primary" type="submit" value="Pick & Bet!" />
-              </div>
+
           </form>
       </div>
   );
