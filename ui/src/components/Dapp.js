@@ -44,6 +44,7 @@ export class Dapp extends React.Component {
     this.initialState = {
       // The user's address and balance
       selectedAddress: undefined,
+      canPickNumber: false,
       balance: undefined,
       // The ID about transactions being sent, and any possible error with them
       txBeingSent: undefined,
@@ -128,16 +129,14 @@ export class Dapp extends React.Component {
               The component doesn't have logic, it just calls the transferTokens
               callback.
             */}
-            {this.state.balance.eq(0) && (
+            {this.state.canPickNumber && (
               <PickANumber
                 pickANumber={(numberBet) =>
                   this._pickANumber(numberBet)
                 }
               />
             )}
-            {this.state.balance.gt(0) && (
-              <KnowResult/>
-            )}
+            <KnowResult/>
           </div>
         </div>
       </div>
@@ -202,7 +201,7 @@ export class Dapp extends React.Component {
     // Fetching the token data and the user's balance are specific to this
     // sample project, but you can reuse the same initialization pattern.
     this._initializeEthers();
-    this._initLotUbiData();
+    this._refreshLotUbiBalance();
     this._startPollingData();
   }
 
@@ -238,17 +237,14 @@ export class Dapp extends React.Component {
     this._pollDataInterval = undefined;
   }
 
-  // The next two methods just read from the contract and store the results
-  // in the component state.
-  async _initLotUbiData() {
-    const balance = await this._lotUbi.balance();
-
-    this.setState({ balance });
-  }
-
   async _refreshLotUbiBalance() {
     const balance = await this._lotUbi.balance();
-    this.setState({ balance });
+    let canPickNumber = undefined;
+    if (!await this._lotUbi.hasPlacedABet()) {
+      canPickNumber = true;
+    }
+
+    this.setState({ balance, canPickNumber });
   }
 
   // This method sends an ethereum transaction to transfer tokens.
