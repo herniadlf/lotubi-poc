@@ -6,6 +6,7 @@ contract LotUbi {
     uint256 private userPickedNumber;
     uint256 public winnerNumber;
     address payable private userAddress;
+    mapping (address => uint256) private usersBets;
 
     event PickedNumber(address numberOwner, uint256 number);
     event UserWon(address numberOwner, uint256 number);
@@ -19,8 +20,12 @@ contract LotUbi {
         require(msg.value == 0.001 ether, '[ERR-PICK-01] You must pay 0.001 ether');
         require(0 < pickedNumber, '[ERR-PICK-02] The number must be between 1 and 10');
         require(pickedNumber <= 10, '[ERR-PICK-02] The number must be between 1 and 10');
+        require(usersBets[msg.sender] == 0, '[ERR-PICK-03] A bet has already been placed from this address');
+
         userPickedNumber = pickedNumber;
-        userAddress = payable(msg.sender);
+        address payable userAddressPayable = payable(msg.sender);
+        userAddress = userAddressPayable;
+        usersBets[userAddressPayable] = pickedNumber;
         deposit();
 
         emit PickedNumber(msg.sender, pickedNumber);
@@ -40,6 +45,10 @@ contract LotUbi {
         } else {
             emit UserLost(winnerNumber);
         }
+    }
+
+    function hasPlacedABet() external view returns (bool) {
+        return usersBets[msg.sender] > 0;
     }
 
     // TODO: This will be retrieved from an oracle.

@@ -33,39 +33,68 @@ describe('LotUbi', function () {
         });
 
         it('Should select a number with valid amount', async function () {
-            [owner, someUserAddress] = await ethers.getSigners();
+            [owner, participant] = await ethers.getSigners();
 
-            const transaction = await lotUbiInstance.connect(someUserAddress).pickANumber(1, {value: baseAmount});
+            const transaction = await lotUbiInstance.connect(participant).pickANumber(1, {value: baseAmount});
 
             await expect(transaction)
-              .to.emit(lotUbiInstance, "PickedNumber").withArgs(someUserAddress.address, 1);
+              .to.emit(lotUbiInstance, "PickedNumber")
+              .withArgs(participant.address, 1);
             expect(await lotUbiInstance.balance())
               .to.equal(baseAmount);
         });
 
+        it('Should fail because the user has already placed a bet', async function () {
+            [owner, participant] = await ethers.getSigners();
+
+            const firstBetTransaction = await lotUbiInstance.connect(participant).pickANumber(2, {value: baseAmount});
+            const secondBetTransaction = lotUbiInstance.connect(participant).pickANumber(5, {value: baseAmount});
+
+            await expect(firstBetTransaction)
+              .to.emit(lotUbiInstance, "PickedNumber")
+              .withArgs(participant.address, 2);
+            await expect(secondBetTransaction)
+              .to.be.revertedWith('A bet has already been placed from this address')
+        });
+
         it('Should select a number with invalid amount', async function () {
-            [owner, someUserAddress] = await ethers.getSigners();
+            [owner, participant] = await ethers.getSigners();
 
             await expect(
-                lotUbiInstance.connect(someUserAddress).pickANumber(1)
+                lotUbiInstance.connect(participant).pickANumber(1)
             ).to.be.revertedWith('You must pay 0.001 ether');
 
         });
 
         it('Should fail for number less than 0', async function () {
-            [owner, someUserAddress] = await ethers.getSigners();
+            [owner, participant] = await ethers.getSigners();
 
             await expect(
-              lotUbiInstance.connect(someUserAddress).pickANumber(0, {value: baseAmount})
-            ).to.be.revertedWith('The number must be between 1 and 10 ');
+              lotUbiInstance.connect(participant).pickANumber(0, {value: baseAmount})
+            ).to.be.revertedWith('The number must be between 1 and 10');
         });
 
         it('Should fail for number greater than than 10', async function () {
-            [owner, someUserAddress] = await ethers.getSigners();
+            [owner, participant] = await ethers.getSigners();
 
             await expect(
-              lotUbiInstance.connect(someUserAddress).pickANumber(11, {value: baseAmount})
+              lotUbiInstance.connect(participant).pickANumber(11, {value: baseAmount})
             ).to.be.revertedWith('The number must be between 1 and 10');
+        });
+    });
+
+    describe('Bet has been placed', function () {
+        it('Should return false because user has not placed a bet', async function () {
+            [owner, participant] = await ethers.getSigners();
+
+            expect(await lotUbiInstance.connect(participant).hasPlacedABet()).to.equal(false);
+        });
+
+        it('Should return true because user has placed a bet', async function () {
+            [owner, participant] = await ethers.getSigners();
+
+            await lotUbiInstance.connect(participant).pickANumber(1, {value: baseAmount});
+            expect(await lotUbiInstance.connect(participant).hasPlacedABet()).to.equal(true);
         });
     });
 
@@ -116,7 +145,8 @@ describe('LotUbi', function () {
             const closeBetTransaction = await lotUbiInstance.connect(owner).closeBets();
 
             await expect(closeBetTransaction)
-              .to.emit(lotUbiInstance, "UserLost").withArgs(winnerNumber);
+              .to.emit(lotUbiInstance, "UserLost")
+              .withArgs(winnerNumber);
         });
 
     })
