@@ -1,15 +1,14 @@
 # lotubi-poc [Experimental]
 
-Training my web3 skills. 
+Training my web3 skills with TDD.
 
 ### Contract next steps
 
-- Allow multi-bets.
 - Security/modifiers reviews.
 - Split the reward to send 50% to UBIBurner.
 - Allow lottery status.
 - Integration with ChainLink for randomness.
 
-### Frontend Next steps
+### Frontend Next stepss
 
-- Improve connect wallet UI.
+- Support lottery status.
