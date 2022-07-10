@@ -9,30 +9,58 @@ contract LotUbi {
     mapping (address => uint256) private usersBets;
     address payable[] private userAddresses;
 
-    event PickedNumber(address participant, uint256 number);
+    event NewGame(address creator, uint gameId);
+    event TicketCreated(address participant, uint256 number);
     event WinnerNumberSettled(uint256 winnerNumber);
     event UserWon(address participant, uint256 number, uint256 earnedMoney);
     event UserLost(address participant, uint256 number);
+
+    enum GameStatus{
+        accepting,
+        generating,
+        finished
+    }
+
+    struct Game{
+        uint id;
+        GameStatus status;
+    }
+
+    struct Ticket{
+        uint id;
+        address owner;
+    }
+
+    Game[] public games;
+    mapping(uint => Game) private idToGames;
+    uint public currentGameId;
+
+    function newGame() public{
+        uint gameId = games.length + 1;
+        Game memory game = Game(gameId, GameStatus.accepting);
+        games.push(game);
+        currentGameId = gameId;
+
+        emit NewGame(msg.sender, gameId);
+    }
 
     function deposit() public payable {
 
     }
 
-    function pickANumber(uint256 pickedNumber) payable external {
-        require(msg.value == 0.001 ether, '[ERR-PICK-01] You must pay 0.001 ether');
-        require(0 < pickedNumber, '[ERR-PICK-02] The number must be between 1 and 10');
-        require(pickedNumber <= 10, '[ERR-PICK-02] The number must be between 1 and 10');
-        require(usersBets[msg.sender] == 0, '[ERR-PICK-03] A bet has already been placed from this address');
-
-        userPickedNumber = pickedNumber;
-        address payable userAddressPayable = payable(msg.sender);
-        userAddress = userAddressPayable;
-        usersBets[userAddressPayable] = pickedNumber;
-        userAddresses.push(userAddressPayable);
-        deposit();
-
-        emit PickedNumber(msg.sender, pickedNumber);
-    }
+//    function newTicket() payable external {
+//        require(msg.value == 0.001 ether, '[ERR-PICK-01] You must pay 0.001 ether');
+//
+//        uint ticketId = tickets[]
+//        Ticket storage ticket = Ticket()
+//        address payable userAddressPayable = payable(msg.sender);
+//        userAddress = userAddressPayable;
+//        usersBets[userAddressPayable] = pickedNumber;
+//        userAddresses.push(userAddressPayable);
+//        deposit();
+//
+//        emit TicketCreated(msg.sender, pickedNumber);
+//    }
 
     function balance() external view returns (uint256) {
         return address(this).balance;
