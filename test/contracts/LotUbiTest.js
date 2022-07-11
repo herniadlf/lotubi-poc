@@ -16,8 +16,7 @@ describe('LotUbi', function () {
     });
 
     describe('Deployment', function () {
-        it('Should initialize empty and without a game', async function () {
-           expect(await lotUbiInstance.balance()).to.equal(ethers.constants.Zero);
+        it('Should initialize empty without a game', async function () {
            expect(await lotUbiInstance.currentGameId()).to.equal(ethers.constants.Zero);
         });
     });
@@ -25,13 +24,117 @@ describe('LotUbi', function () {
     describe('New Game', function() {
        it('Should create a new game with id 1', async function () {
            [owner] = await ethers.getSigners();
-           const newGameId = await lotUbiInstance.newGame();
+           const newGameTransaction = await lotUbiInstance.newGame();
 
            expect(await lotUbiInstance.currentGameId()).to.equal(ethers.constants.One);
-           await expect(newGameId)
+           await expect(newGameTransaction)
                .to.emit(lotUbiInstance, 'NewGame')
                .withArgs(owner.address, 1);
        });
+
+        it('Should fail if there is a current game not finished', async function () {
+            [owner] = await ethers.getSigners();
+            await lotUbiInstance.newGame();
+
+            await expect(lotUbiInstance.newGame())
+                .to.be.revertedWith('ERR_GAME_01');
+        });
+    });
+
+    describe('Generate tickets', function() {
+        it('Should fail if there is no current game open', async function () {
+            await expect(lotUbiInstance.generateTickets(1))
+                .to.be.revertedWith('ERR_TICKET_01');
+        });
+
+        it('Should fail if there is quantity=0', async function () {
+            await lotUbiInstance.newGame();
+
+            await expect(lotUbiInstance.generateTickets(0))
+                .to.be.revertedWith('ERR_TICKET_02');
+        });
+
+        it('Should fail if there is no amount', async function () {
+            await lotUbiInstance.newGame();
+
+            await expect(lotUbiInstance.generateTickets(1))
+                .to.be.revertedWith('ERR_TICKET_03');
+        });
+
+        it('Should fail if there is not enough amount for quantity=1', async function () {
+            await lotUbiInstance.newGame();
+
+            await expect(lotUbiInstance.generateTickets(1, {value: ethers.utils.parseEther('0.0001')}))
+                .to.be.revertedWith('ERR_TICKET_03');
+        });
+
+        it('Should fail if there is not enough amount for quantity=2', async function () {
+            await lotUbiInstance.newGame();
+
+            await expect(lotUbiInstance.generateTickets(2, {value: baseAmount}))
+                .to.be.revertedWith('ERR_TICKET_03');
+        });
+
+        it('Should create 1 ticket and update the treasury', async function () {
+            await lotUbiInstance.newGame();
+            const gameId = await lotUbiInstance.currentGameId();
+
+            [owner, player] = await ethers.getSigners();
+            const generateTickets = await lotUbiInstance.connect(player).generateTickets(1, {value: baseAmount});
+            await expect(generateTickets)
+                .to.emit(lotUbiInstance, 'TicketCreated')
+                .withArgs(player.address, 1, baseAmount);
+            expect(await lotUbiInstance.getGameTreasury(gameId))
+                .to.equal(baseAmount);
+        });
+
+        it('Should create 2 tickets for the same player and update the treasury', async function () {
+            await lotUbiInstance.newGame();
+            const gameId = await lotUbiInstance.currentGameId();
+
+            [owner, player] = await ethers.getSigners();
+            const generateTickets = await lotUbiInstance.connect(player).generateTickets(2, {value: baseAmount * 2});
+            await expect(generateTickets)
+                .to.emit(lotUbiInstance, 'TicketCreated')
+                .withArgs(player.address, 2, baseAmount * 2);
+            expect(await lotUbiInstance.getGameTreasury(gameId))
+                .to.equal(baseAmount * 2);
+        });
+
+        it('Should create 1 ticket for different players and update the treasury', async function () {
+            await lotUbiInstance.newGame();
+            const gameId = await lotUbiInstance.currentGameId();
+
+            [owner, player1, player2] = await ethers.getSigners();
+            const generatePlayer1Tickets = await lotUbiInstance.connect(player1).generateTickets(1, {value: baseAmount});
+            await expect(generatePlayer1Tickets)
+                .to.emit(lotUbiInstance, 'TicketCreated')
+                .withArgs(player1.address, 1, baseAmount);
+            const generatePlayer2Tickets = await lotUbiInstance.connect(player2).generateTickets(1, {value: baseAmount});
+            await expect(generatePlayer2Tickets)
+                .to.emit(lotUbiInstance, 'TicketCreated')
+                .withArgs(player2.address, 1, baseAmount);
+            expect(await lotUbiInstance.getGameTreasury(gameId))
+                .to.equal(baseAmount*2);
+        });
+
+        it('Should create 1 ticket for player1 and 2 tickets for player 2', async function () {
+            await lotUbiInstance.newGame();
+            const gameId = await lotUbiInstance.currentGameId();
+
+            [owner, player1, player2] = await ethers.getSigners();
+            const generatePlayer1Tickets = await lotUbiInstance.connect(player1).generateTickets(1, {value: baseAmount});
+            await expect(generatePlayer1Tickets)
+                .to.emit(lotUbiInstance, 'TicketCreated')
+                .withArgs(player1.address, 1, baseAmount);
+            const generatePlayer2Tickets = await lotUbiInstance.connect(player2).generateTickets(2, {value: baseAmount*2});
+            await expect(generatePlayer2Tickets)
+                .to.emit(lotUbiInstance, 'TicketCreated')
+                .withArgs(player2.address, 2, baseAmount*2);
+            expect(await lotUbiInstance.getGameTreasury(gameId))
+                .to.equal(baseAmount*3);
+        });
+
     });
 
     // describe('New Ticket', function () {
